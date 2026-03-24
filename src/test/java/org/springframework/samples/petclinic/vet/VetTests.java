@@ -15,10 +15,14 @@
  */
 package org.springframework.samples.petclinic.vet;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.util.SerializationUtils;
-
 import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Dave Syer
@@ -26,13 +30,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 class VetTests {
 
 	@Test
-	void serialization() {
+	void serialization() throws Exception {
 		Vet vet = new Vet();
 		vet.setFirstName("Zaphod");
 		vet.setLastName("Beeblebrox");
 		vet.setId(123);
-		@SuppressWarnings("deprecation")
-		Vet other = (Vet) SerializationUtils.deserialize(SerializationUtils.serialize(vet));
+
+		// Serialize
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		try (ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+			oos.writeObject(vet);
+		}
+
+		// Deserialize
+		Vet other;
+		try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()))) {
+			other = (Vet) ois.readObject();
+		}
+
 		assertThat(other.getFirstName()).isEqualTo(vet.getFirstName());
 		assertThat(other.getLastName()).isEqualTo(vet.getLastName());
 		assertThat(other.getId()).isEqualTo(vet.getId());

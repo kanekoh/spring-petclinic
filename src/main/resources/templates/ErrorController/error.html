@@ -1,0 +1,14 @@
+{#include layout.html}
+<img src="/resources/images/pets.png" />
+<h2>Something happened...</h2>
+
+{#if status == 404}
+<p>The requested page was not found.</p>
+{#else if status == 500}
+<p>An internal server error occurred.</p>
+{#else}
+<p>An unexpected error occurred.</p>
+{/if}
+
+<p>{message}</p>
+{/include}

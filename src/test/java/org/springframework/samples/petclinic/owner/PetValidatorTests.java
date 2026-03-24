@@ -19,14 +19,11 @@ package org.springframework.samples.petclinic.owner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledInNativeImage;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.validation.Errors;
-import org.springframework.validation.MapBindingResult;
 
 import java.time.LocalDate;
-import java.util.HashMap;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -37,7 +34,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @author Wick Dynex
  */
 @ExtendWith(MockitoExtension.class)
-@DisabledInNativeImage
 class PetValidatorTests {
 
 	private PetValidator petValidator;
@@ -45,8 +41,6 @@ class PetValidatorTests {
 	private Pet pet;
 
 	private PetType petType;
-
-	private Errors errors;
 
 	private static final String petName = "Buddy";
 
@@ -59,7 +53,6 @@ class PetValidatorTests {
 		petValidator = new PetValidator();
 		pet = new Pet();
 		petType = new PetType();
-		errors = new MapBindingResult(new HashMap<>(), "pet");
 	}
 
 	@Test
@@ -69,9 +62,11 @@ class PetValidatorTests {
 		pet.setType(petType);
 		pet.setBirthDate(petBirthDate);
 
-		petValidator.validate(pet, errors);
+		List<PetValidator.PetFieldError> errors = petValidator.validate(pet);
 
-		assertFalse(errors.hasErrors());
+		assertFalse(errors.stream().anyMatch(e -> e.field().equals("name")));
+		assertFalse(errors.stream().anyMatch(e -> e.field().equals("type")));
+		assertFalse(errors.stream().anyMatch(e -> e.field().equals("birthDate")));
 	}
 
 	@Nested
@@ -84,9 +79,9 @@ class PetValidatorTests {
 			pet.setType(petType);
 			pet.setBirthDate(petBirthDate);
 
-			petValidator.validate(pet, errors);
+			List<PetValidator.PetFieldError> errors = petValidator.validate(pet);
 
-			assertTrue(errors.hasFieldErrors("name"));
+			assertTrue(errors.stream().anyMatch(e -> e.field().equals("name")));
 		}
 
 		@Test
@@ -95,9 +90,9 @@ class PetValidatorTests {
 			pet.setType(null);
 			pet.setBirthDate(petBirthDate);
 
-			petValidator.validate(pet, errors);
+			List<PetValidator.PetFieldError> errors = petValidator.validate(pet);
 
-			assertTrue(errors.hasFieldErrors("type"));
+			assertTrue(errors.stream().anyMatch(e -> e.field().equals("type")));
 		}
 
 		@Test
@@ -107,9 +102,9 @@ class PetValidatorTests {
 			pet.setType(petType);
 			pet.setBirthDate(null);
 
-			petValidator.validate(pet, errors);
+			List<PetValidator.PetFieldError> errors = petValidator.validate(pet);
 
-			assertTrue(errors.hasFieldErrors("birthDate"));
+			assertTrue(errors.stream().anyMatch(e -> e.field().equals("birthDate")));
 		}
 
 	}

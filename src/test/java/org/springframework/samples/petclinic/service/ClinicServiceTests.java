@@ -20,15 +20,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase.Replace;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.samples.petclinic.owner.Owner;
 import org.springframework.samples.petclinic.owner.OwnerRepository;
 import org.springframework.samples.petclinic.owner.Pet;
@@ -37,28 +32,13 @@ import org.springframework.samples.petclinic.owner.PetTypeRepository;
 import org.springframework.samples.petclinic.owner.Visit;
 import org.springframework.samples.petclinic.vet.Vet;
 import org.springframework.samples.petclinic.vet.VetRepository;
-import org.springframework.transaction.annotation.Transactional;
+
+import io.quarkus.test.TestTransaction;
+import io.quarkus.test.junit.QuarkusTest;
+import jakarta.inject.Inject;
 
 /**
  * Integration test of the Service and the Repository layer.
- * <p>
- * ClinicServiceSpringDataJpaTests subclasses benefit from the following services provided
- * by the Spring TestContext Framework:
- * </p>
- * <ul>
- * <li><strong>Spring IoC container caching</strong> which spares us unnecessary set up
- * time between test execution.</li>
- * <li><strong>Dependency Injection</strong> of test fixture instances, meaning that we
- * don't need to perform application context lookups. See the use of
- * {@link Autowired @Autowired} on the <code> </code> instance variable, which uses
- * autowiring <em>by type</em>.
- * <li><strong>Transaction management</strong>, meaning each test method is executed in
- * its own transaction, which is automatically rolled back by default. Thus, even if tests
- * insert or otherwise change database state, there is no need for a teardown or cleanup
- * script.
- * <li>An {@link org.springframework.context.ApplicationContext ApplicationContext} is
- * also inherited and can be used for explicit bean lookup if necessary.</li>
- * </ul>
  *
  * @author Ken Krebs
  * @author Rod Johnson
@@ -67,30 +47,25 @@ import org.springframework.transaction.annotation.Transactional;
  * @author Michael Isvy
  * @author Dave Syer
  */
-@DataJpaTest
-// Ensure that if the mysql profile is active we connect to the real database:
-@AutoConfigureTestDatabase(replace = Replace.NONE)
-// @TestPropertySource("/application-postgres.properties")
+@QuarkusTest
 class ClinicServiceTests {
 
-	@Autowired
+	@Inject
 	protected OwnerRepository owners;
 
-	@Autowired
+	@Inject
 	protected PetTypeRepository types;
 
-	@Autowired
+	@Inject
 	protected VetRepository vets;
-
-	private final Pageable pageable = Pageable.unpaged();
 
 	@Test
 	void shouldFindOwnersByLastName() {
-		Page<Owner> owners = this.owners.findByLastNameStartingWith("Davis", pageable);
-		assertThat(owners).hasSize(2);
+		List<Owner> ownersFound = this.owners.findByLastNameStartingWithUnpaged("Davis");
+		assertThat(ownersFound).hasSize(2);
 
-		owners = this.owners.findByLastNameStartingWith("Daviss", pageable);
-		assertThat(owners).isEmpty();
+		List<Owner> ownersNotFound = this.owners.findByLastNameStartingWithUnpaged("Daviss");
+		assertThat(ownersNotFound).isEmpty();
 	}
 
 	@Test
@@ -105,10 +80,10 @@ class ClinicServiceTests {
 	}
 
 	@Test
-	@Transactional
+	@TestTransaction
 	void shouldInsertOwner() {
-		Page<Owner> owners = this.owners.findByLastNameStartingWith("Schultz", pageable);
-		int found = (int) owners.getTotalElements();
+		List<Owner> ownersFound = this.owners.findByLastNameStartingWithUnpaged("Schultz");
+		int found = ownersFound.size();
 
 		Owner owner = new Owner();
 		owner.setFirstName("Sam");
@@ -119,12 +94,12 @@ class ClinicServiceTests {
 		this.owners.save(owner);
 		assertThat(owner.getId()).isNotZero();
 
-		owners = this.owners.findByLastNameStartingWith("Schultz", pageable);
-		assertThat(owners.getTotalElements()).isEqualTo(found + 1);
+		ownersFound = this.owners.findByLastNameStartingWithUnpaged("Schultz");
+		assertThat(ownersFound).hasSize(found + 1);
 	}
 
 	@Test
-	@Transactional
+	@TestTransaction
 	void shouldUpdateOwner() {
 		Optional<Owner> optionalOwner = this.owners.findById(1);
 		assertThat(optionalOwner).isPresent();
@@ -153,7 +128,7 @@ class ClinicServiceTests {
 	}
 
 	@Test
-	@Transactional
+	@TestTransaction
 	void shouldInsertPetIntoDatabaseAndGenerateId() {
 		Optional<Owner> optionalOwner = this.owners.findById(6);
 		assertThat(optionalOwner).isPresent();
@@ -163,8 +138,8 @@ class ClinicServiceTests {
 
 		Pet pet = new Pet();
 		pet.setName("bowser");
-		Collection<PetType> types = this.types.findPetTypes();
-		pet.setType(EntityUtils.getById(types, PetType.class, 2));
+		Collection<PetType> petTypes = this.types.findPetTypes();
+		pet.setType(EntityUtils.getById(petTypes, PetType.class, 2));
 		pet.setBirthDate(LocalDate.now());
 		owner6.addPet(pet);
 		assertThat(owner6.getPets()).hasSize(found + 1);
@@ -181,7 +156,7 @@ class ClinicServiceTests {
 	}
 
 	@Test
-	@Transactional
+	@TestTransaction
 	void shouldUpdatePetName() {
 		Optional<Owner> optionalOwner = this.owners.findById(6);
 		assertThat(optionalOwner).isPresent();
@@ -203,9 +178,9 @@ class ClinicServiceTests {
 
 	@Test
 	void shouldFindVets() {
-		Collection<Vet> vets = this.vets.findAll();
+		Collection<Vet> vetsFound = this.vets.findAllVets();
 
-		Vet vet = EntityUtils.getById(vets, Vet.class, 3);
+		Vet vet = EntityUtils.getById(vetsFound, Vet.class, 3);
 		assertThat(vet.getLastName()).isEqualTo("Douglas");
 		assertThat(vet.getNrOfSpecialties()).isEqualTo(2);
 		assertThat(vet.getSpecialties().get(0).getName()).isEqualTo("dentistry");
@@ -213,7 +188,7 @@ class ClinicServiceTests {
 	}
 
 	@Test
-	@Transactional
+	@TestTransaction
 	void shouldAddNewVisitForPet() {
 		Optional<Owner> optionalOwner = this.owners.findById(6);
 		assertThat(optionalOwner).isPresent();

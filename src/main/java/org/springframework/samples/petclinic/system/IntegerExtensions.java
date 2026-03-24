@@ -13,28 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.springframework.samples.petclinic.system;
 
-package org.springframework.samples.petclinic.owner;
-
-import java.util.List;
-
-import io.quarkus.hibernate.orm.panache.PanacheRepository;
-import jakarta.enterprise.context.ApplicationScoped;
+import io.quarkus.qute.TemplateExtension;
 
 /**
- * Repository class for <code>PetType</code> domain objects.
- *
- * @author Patrick Baumgartner
+ * Qute template extension methods for integer arithmetic.
  */
-@ApplicationScoped
-public class PetTypeRepository implements PanacheRepository<PetType> {
+@TemplateExtension
+public class IntegerExtensions {
 
-	/**
-	 * Retrieve all {@link PetType}s from the data store.
-	 * @return a Collection of {@link PetType}s.
-	 */
-	public List<PetType> findPetTypes() {
-		return find("ORDER BY name").list();
+	public static int plus(Integer value, int n) {
+		return value + n;
+	}
+
+	public static int minus(Integer value, int n) {
+		return value - n;
 	}
 
 }
