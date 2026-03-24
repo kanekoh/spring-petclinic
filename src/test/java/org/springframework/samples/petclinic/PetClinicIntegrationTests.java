@@ -47,4 +47,36 @@ public class PetClinicIntegrationTests {
 		given().queryParam("lastName", "").when().get("/owners").then().statusCode(200);
 	}
 
+	@Test
+	void staticCss() {
+		given().when().get("/resources/css/petclinic.css").then().statusCode(200);
+	}
+
+	@Test
+	void staticFavicon() {
+		given().when().get("/resources/images/favicon.png").then().statusCode(200);
+	}
+
+	@Test
+	void staticSpringLogo() {
+		given().when().get("/resources/images/spring-logo.svg").then().statusCode(200);
+	}
+
+	@Test
+	void webjarBootstrap() {
+		given().when().get("/webjars/bootstrap/5.3.8/dist/js/bootstrap.bundle.min.js").then().statusCode(200);
+	}
+
+	@Test
+	void webjarFontAwesome() {
+		given().when().get("/webjars/font-awesome/4.7.0/css/font-awesome.min.css").then().statusCode(200);
+	}
+
+	@Test
+	void ownerDetailsPageReferencesStaticResources() {
+		String body = given().when().get("/owners/1").then().statusCode(200).extract().body().asString();
+		assertThat(body).contains("/resources/css/petclinic.css");
+		assertThat(body).contains("/webjars/bootstrap/");
+	}
+
 }
