@@ -21,14 +21,11 @@ import static org.mockito.BDDMockito.given;
 
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledInNativeImage;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -39,7 +36,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * @author Colin But
  */
 @ExtendWith(MockitoExtension.class)
-@DisabledInNativeImage
 class PetTypeFormatterTests {
 
 	@Mock
@@ -56,14 +52,14 @@ class PetTypeFormatterTests {
 	void testPrint() {
 		PetType petType = new PetType();
 		petType.setName("Hamster");
-		String petTypeName = this.petTypeFormatter.print(petType, Locale.ENGLISH);
+		String petTypeName = this.petTypeFormatter.print(petType);
 		assertThat(petTypeName).isEqualTo("Hamster");
 	}
 
 	@Test
 	void shouldParse() throws ParseException {
 		given(types.findPetTypes()).willReturn(makePetTypes());
-		PetType petType = petTypeFormatter.parse("Bird", Locale.ENGLISH);
+		PetType petType = petTypeFormatter.parse("Bird");
 		assertThat(petType.getName()).isEqualTo("Bird");
 	}
 
@@ -71,13 +67,13 @@ class PetTypeFormatterTests {
 	void shouldThrowParseException() {
 		given(types.findPetTypes()).willReturn(makePetTypes());
 		Assertions.assertThrows(ParseException.class, () -> {
-			petTypeFormatter.parse("Fish", Locale.ENGLISH);
+			petTypeFormatter.parse("Fish");
 		});
 	}
 
 	/**
 	 * Helper method to produce some sample pet types just for test purpose
-	 * @return {@link Collection} of {@link PetType}
+	 * @return {@link List} of {@link PetType}
 	 */
 	private List<PetType> makePetTypes() {
 		List<PetType> petTypes = new ArrayList<>();

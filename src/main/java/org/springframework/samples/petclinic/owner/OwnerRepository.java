@@ -15,17 +15,16 @@
  */
 package org.springframework.samples.petclinic.owner;
 
+import java.util.List;
 import java.util.Optional;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
+import io.quarkus.hibernate.orm.panache.PanacheRepository;
+import io.quarkus.panache.common.Page;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 
 /**
- * Repository class for <code>Owner</code> domain objects. All method names are compliant
- * with Spring Data naming conventions so this interface can easily be extended for Spring
- * Data. See:
- * https://docs.spring.io/spring-data/jpa/docs/current/reference/html/#repositories.query-methods.query-creation
+ * Repository class for <code>Owner</code> domain objects.
  *
  * @author Ken Krebs
  * @author Juergen Hoeller
@@ -33,30 +32,61 @@ import org.springframework.data.jpa.repository.JpaRepository;
  * @author Michael Isvy
  * @author Wick Dynex
  */
-public interface OwnerRepository extends JpaRepository<Owner, Integer> {
+@ApplicationScoped
+public class OwnerRepository implements PanacheRepository<Owner> {
 
 	/**
 	 * Retrieve {@link Owner}s from the data store by last name, returning all owners
 	 * whose last name <i>starts</i> with the given name.
 	 * @param lastName Value to search for
-	 * @return a Collection of matching {@link Owner}s (or an empty Collection if none
-	 * found)
+	 * @param page the page to retrieve
+	 * @param pageSize the size of each page
+	 * @return a List of matching {@link Owner}s
 	 */
-	Page<Owner> findByLastNameStartingWith(String lastName, Pageable pageable);
+	public List<Owner> findByLastNameStartingWith(String lastName, int page, int pageSize) {
+		return find("lastName like ?1", lastName + "%").page(Page.of(page, pageSize)).list();
+	}
+
+	/**
+	 * Count owners whose last name starts with the given name.
+	 * @param lastName Value to search for
+	 * @return the count of matching owners
+	 */
+	public long countByLastNameStartingWith(String lastName) {
+		return count("lastName like ?1", lastName + "%");
+	}
+
+	/**
+	 * Retrieve all {@link Owner}s whose last name starts with the given name, unpaged.
+	 * @param lastName Value to search for
+	 * @return a List of matching {@link Owner}s
+	 */
+	public List<Owner> findByLastNameStartingWithUnpaged(String lastName) {
+		return find("lastName like ?1", lastName + "%").list();
+	}
 
 	/**
 	 * Retrieve an {@link Owner} from the data store by id.
-	 * <p>
-	 * This method returns an {@link Optional} containing the {@link Owner} if found. If
-	 * no {@link Owner} is found with the provided id, it will return an empty
-	 * {@link Optional}.
-	 * </p>
 	 * @param id the id to search for
-	 * @return an {@link Optional} containing the {@link Owner} if found, or an empty
-	 * {@link Optional} if not found.
-	 * @throws IllegalArgumentException if the id is null (assuming null is not a valid
-	 * input for id)
+	 * @return an {@link Optional} containing the {@link Owner} if found
 	 */
-	Optional<Owner> findById(Integer id);
+	public Optional<Owner> findById(Integer id) {
+		Owner owner = findById((long) id);
+		return Optional.ofNullable(owner);
+	}
+
+	/**
+	 * Save an owner.
+	 * @param owner the owner to save
+	 */
+	@Transactional
+	public void save(Owner owner) {
+		if (owner.getId() == null) {
+			persist(owner);
+		}
+		else {
+			getEntityManager().merge(owner);
+		}
+	}
 
 }

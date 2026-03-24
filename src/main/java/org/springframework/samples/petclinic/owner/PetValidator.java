@@ -15,9 +15,8 @@
  */
 package org.springframework.samples.petclinic.owner;
 
-import org.springframework.util.StringUtils;
-import org.springframework.validation.Errors;
-import org.springframework.validation.Validator;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * <code>Validator</code> for <code>Pet</code> forms.
@@ -29,36 +28,43 @@ import org.springframework.validation.Validator;
  * @author Ken Krebs
  * @author Juergen Hoeller
  */
-public class PetValidator implements Validator {
+public class PetValidator {
 
 	private static final String REQUIRED = "required";
 
-	@Override
-	public void validate(Object obj, Errors errors) {
-		Pet pet = (Pet) obj;
+	/**
+	 * Validates the pet and returns a list of field errors.
+	 * @param pet the pet to validate
+	 * @return list of validation errors, empty if valid
+	 */
+	public List<PetFieldError> validate(Pet pet) {
+		List<PetFieldError> errors = new ArrayList<>();
 		String name = pet.getName();
 		// name validation
-		if (!StringUtils.hasText(name)) {
-			errors.rejectValue("name", REQUIRED, REQUIRED);
+		if (name == null || name.isBlank()) {
+			errors.add(new PetFieldError("name", REQUIRED, REQUIRED));
 		}
 
 		// type validation
 		if (pet.isNew() && pet.getType() == null) {
-			errors.rejectValue("type", REQUIRED, REQUIRED);
+			errors.add(new PetFieldError("type", REQUIRED, REQUIRED));
 		}
 
 		// birth date validation
 		if (pet.getBirthDate() == null) {
-			errors.rejectValue("birthDate", REQUIRED, REQUIRED);
+			errors.add(new PetFieldError("birthDate", REQUIRED, REQUIRED));
 		}
+		return errors;
 	}
 
 	/**
-	 * This Validator validates *just* Pet instances
+	 * Record representing a field-level validation error.
+	 * @param field the field name
+	 * @param code the error code
+	 * @param message the error message
 	 */
-	@Override
-	public boolean supports(Class<?> clazz) {
-		return Pet.class.isAssignableFrom(clazz);
+	public record PetFieldError(String field, String code, String message) {
+
 	}
 
 }

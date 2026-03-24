@@ -13,31 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.samples.petclinic.system;
 
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.TemplateInstance;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.ext.Provider;
+import org.jboss.logging.Logger;
 
-@Path("/")
-public class WelcomeController {
+/**
+ * Exception handler that renders the error template.
+ */
+@Provider
+public class ErrorController implements ExceptionMapper<RuntimeException> {
+
+	private static final Logger LOG = Logger.getLogger(ErrorController.class);
 
 	@CheckedTemplate
 	public static class Templates {
 
-		public static native TemplateInstance welcome();
+		public static native TemplateInstance error(int status, String message);
 
 	}
 
-	@GET
-	@Path("")
-	@Produces(MediaType.TEXT_HTML)
-	public TemplateInstance welcome() {
-		return Templates.welcome();
+	@Override
+	public Response toResponse(RuntimeException exception) {
+		LOG.errorf(exception, "Unhandled exception: %s", exception.getMessage());
+		String message = exception.getMessage();
+		return Response.serverError().entity(Templates.error(500, message)).build();
 	}
 
 }
